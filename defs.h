@@ -7,6 +7,9 @@
 #include <time.h>
 #include <math.h>
 
+#define IN 
+#define OUT 
+
 // #define PRINT_INFO_ENABLED
 
 #if (defined __MINGW32__) || (defined __MINGW64__)
