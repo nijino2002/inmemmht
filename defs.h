@@ -6,6 +6,10 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define IN 
 #define OUT 

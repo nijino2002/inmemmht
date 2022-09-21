@@ -1,7 +1,7 @@
 CC_FLAGS = -g
 CC = gcc $(CC_FLAGS)
-OBJ = defs.o mhtdefs.o sha256.o mht.o dataelem.o
-LIBS = -lm
+OBJ = defs.o mhtdefs.o sha256.o mht.o dataelem.o sqlite3.o utils.o
+LIBS = -lm -lpthread -ldl
 
 all : test_1
 .PHONY : all
@@ -9,7 +9,7 @@ all : test_1
 test_1 : test_1.o $(OBJ)
 	$(CC) -o test_1 test_1.o $(OBJ) $(LIBS)
 
-$(OBJ) : defs.h mhtdefs.h sha256.h dataelem.h mht.h
+$(OBJ) : defs.h mhtdefs.h sha256.h dataelem.h mht.h sqlite3.h utils.h
 
 .PHONY : clean
 clean : 
