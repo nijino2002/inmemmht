@@ -1,12 +1,15 @@
 #ifndef MHT_H
 #define MHT_H
 
+#include "defs.h"
 #include "mhtdefs.h"
 #include "dataelem.h"
+#include "sha256.h"
 
 typedef struct _DATA_SET {
 	PDATA_ELEM m_pDE;
 	int m_size;
+    bool m_is_hashed;
 } DATA_SET, *PDATA_SET;
 
 /**
@@ -17,7 +20,7 @@ typedef struct _DATA_SET {
  *
  * @return     { 0 if successful }
  */
-int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtnode);
+int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot);
 
 /**
  * @brief      Verifies the integrity of the specific data element (a leaf node of the MHT)

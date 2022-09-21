@@ -7,6 +7,7 @@ typedef struct  _MHTNode
 {
 	int 	m_pageNo;
 	char	m_hash[32];
+	int     m_level;
 	/* a minus offset indicates the distance that the file pointer has to move back 
 	from current node to the member.
 	*/ 
@@ -25,7 +26,10 @@ Parameters:
 	d: data string.
 Return: a pointer to an MHT node.
  */
-PMHTNode makeMHTNode(int pageno, const char d[]);
+PMHTNode makeMHTNode(int pageno, int level, const char d[]);
+
+
+PMHTNode combineNodes(PMHTNode lchild, PMHTNode rchild);
 
 /*
 Making a MHT node with hashed zero.

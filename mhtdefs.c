@@ -1,7 +1,7 @@
 #include "sha256.h"
 #include "mhtdefs.h"
 
-PMHTNode makeMHTNode(int pageno, const char d[]){
+PMHTNode makeMHTNode(int pageno, int level, const char d[]){
 	PMHTNode node_ptr = NULL;
 	if(d == NULL)
 		return NULL;
@@ -9,6 +9,7 @@ PMHTNode makeMHTNode(int pageno, const char d[]){
 	if(node_ptr == NULL)
 		return NULL;
 	node_ptr->m_pageNo = pageno;
+	node_ptr->m_level = level;
 	memcpy(node_ptr->m_hash, d, HASH_LEN);	// HASH_LEN == SHA256_BLOCK_SIZE == 32
 
 	node_ptr->m_lchildPageNo = node_ptr->m_rchildPageNo = node_ptr->m_parentPageNo = UNASSIGNED_PAGENO;
@@ -20,8 +21,29 @@ PMHTNode makeMHTNode(int pageno, const char d[]){
 	return node_ptr;
 }
 
+PMHTNode combineNodes(PMHTNode lchild, PMHTNode rchild){
+	const char* FUNC_NAME = "combineNodes";
+	PMHTNode node_ptr = NULL;
+	SHA256_CTX ctx;
+	unsigned char* hash_buffer = NULL;
+
+	if(!check_pointer_ex(lchild, "lchild", FUNC_NAME, "null pointer") || 
+		!check_pointer_ex(rchild, "rchild", FUNC_NAME, "null pointer"))
+		return NULL;
+
+	/* calculating combined hash */
+	if(lchild->m_level == NODELEVEL_LEAF){
+		// node_ptr = makeMHTNode(lchild->m_pageNo, lchild->m_level + 1, );
+	}
+	else {
+		;
+	}
+
+	return node_ptr;
+}
+
 PMHTNode makeZeroMHTNode(int pageno){
-	return makeMHTNode(pageno, g_zeroHash);
+	return makeMHTNode(pageno, NODELEVEL_LEAF, g_zeroHash);
 }
 
 void deleteMHTNode(PMHTNode *node_ptr){
