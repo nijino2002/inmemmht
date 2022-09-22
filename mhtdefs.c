@@ -55,7 +55,11 @@ PMHTNode combineNodes(PMHTNode lchild, PMHTNode rchild){
 }
 
 PMHTNode makeZeroMHTNode(int pageno){
-	return makeMHTNode(pageno, NODELEVEL_LEAF, g_zeroHash);
+	PMHTNode mhtnode_ptr = NULL;
+
+	mhtnode_ptr = makeMHTNode(pageno, NODELEVEL_LEAF, g_zeroHash);
+	mhtnode_ptr->m_is_supplement_node = TRUE;
+	return mhtnode_ptr;
 }
 
 void deleteMHTNode(PMHTNode *node_ptr){

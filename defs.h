@@ -25,6 +25,7 @@
 
 #define MAX_SIGNED_INT  0x7fffffff
 #define MAX_UNSIGNED_INT    0xffffffff
+#define DEF_UPPER_BOUND_INDEX   (0x7fffffff - 0x0fffffff)
 #define UNASSIGNED_INDEX    MAX_SIGNED_INT
 #define HASH_LEN	32
 #define HASH_STR_LEN    70
