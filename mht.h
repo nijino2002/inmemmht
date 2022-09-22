@@ -5,6 +5,7 @@
 #include "mhtdefs.h"
 #include "dataelem.h"
 #include "sha256.h"
+#include "dbqueue.h"
 
 typedef struct _DATA_SET {
 	PDATA_ELEM m_pDE;

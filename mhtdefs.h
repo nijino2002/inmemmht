@@ -8,6 +8,9 @@ typedef struct  _MHTNode
 	int 	m_pageNo;
 	char	m_hash[32];
 	int     m_level;
+	int 	m_is_supplement_node;
+	struct _MHTNode* m_lchild;
+	struct _MHTNode* m_rchild;
 	/* a minus offset indicates the distance that the file pointer has to move back 
 	from current node to the member.
 	*/ 
@@ -80,5 +83,7 @@ Return:
 	NULL.
 */
 void generateCombinedHash_SHA256(char *hash1, char *hash2, char *buf, uint32 buf_len);
+
+PMHTNode get_the_right_most_child(PMHTNode node);
 
 #endif

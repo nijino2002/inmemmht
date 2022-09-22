@@ -11,6 +11,9 @@ PMHTNode makeMHTNode(int pageno, int level, const char d[]){
 	node_ptr->m_pageNo = pageno;
 	node_ptr->m_level = level;
 	memcpy(node_ptr->m_hash, d, HASH_LEN);	// HASH_LEN == SHA256_BLOCK_SIZE == 32
+	m_is_supplement_node = FALSE;
+	node_ptr->m_lchild = NULL;
+	node_ptr->m_rchild = NULL;
 
 	node_ptr->m_lchildPageNo = node_ptr->m_rchildPageNo = node_ptr->m_parentPageNo = UNASSIGNED_PAGENO;
 	node_ptr->m_lchildOffset = node_ptr->m_rchildOffset = node_ptr->m_parentOffset = UNASSIGNED_OFFSET;
@@ -32,12 +35,21 @@ PMHTNode combineNodes(PMHTNode lchild, PMHTNode rchild){
 		return NULL;
 
 	/* calculating combined hash */
+	hash_buffer = (unsigned char*) malloc (SHA256_BLOCK_SIZE);
+	memset(hash_buffer, 0, SHA256_BLOCK_SIZE);
+	generateCombinedHash_SHA256(lchild->m_hash, rchild->m_hash, hash_buffer, SHA256_BLOCK_SIZE);
+
+	/* if the nodes being combined are leaf nodes */
 	if(lchild->m_level == NODELEVEL_LEAF){
-		// node_ptr = makeMHTNode(lchild->m_pageNo, lchild->m_level + 1, );
+		node_ptr = makeMHTNode(lchild->m_pageNo, lchild->m_level + 1, hash_buffer);
 	}
 	else {
-		;
+		node_ptr = makeMHTNode(get_the_right_most_child(lchild)->m_pageNo, lchild->m_level + 1, hash_buffer);
 	}
+
+	node_ptr->m_is_supplement_node = FALSE;
+	node_ptr->m_lchild = lchild;
+	node_ptr->m_rchild = rchild;
 
 	return node_ptr;
 }
@@ -112,4 +124,18 @@ void generateCombinedHash_SHA256(char *hash1, char *hash2, char *buf, uint32 buf
 	sha256_final(&ctx, buf);
 
 	return;
+}
+
+PMHTNode get_the_right_most_child(PMHTNode node){
+	const char* FUNC_NAME = "get_the_right_most_child";
+	PMHTNode node_ptr = node;
+	if(!check_pointer_ex(node, "node", FUNC_NAME, "null pointer")){
+		return NULL;
+	}
+
+	while(node_ptr->m_level != NODELEVEL_LEAF) {
+		node_ptr = node_ptr->m_rchild;
+	}
+
+	return node_ptr;
 }
