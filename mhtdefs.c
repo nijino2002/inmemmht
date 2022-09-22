@@ -11,7 +11,7 @@ PMHTNode makeMHTNode(int pageno, int level, const char d[]){
 	node_ptr->m_pageNo = pageno;
 	node_ptr->m_level = level;
 	memcpy(node_ptr->m_hash, d, HASH_LEN);	// HASH_LEN == SHA256_BLOCK_SIZE == 32
-	m_is_supplement_node = FALSE;
+	node_ptr->m_is_supplement_node = FALSE;
 	node_ptr->m_lchild = NULL;
 	node_ptr->m_rchild = NULL;
 

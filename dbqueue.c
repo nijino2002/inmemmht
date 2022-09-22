@@ -32,7 +32,8 @@ PQNODE makeQNode(PMHTNode pmhtnode){
 
 void deleteQNode(PQNODE *node_ptr){
 	if(*node_ptr){
-		(*node_ptr)->m_MHTNode_ptr ? (*node_ptr)->m_MHTNode_ptr = NULL : nop();
+		/* NOTE: the MHT node within the queue node will not be released */
+		(*node_ptr)->m_ptr ? (*node_ptr)->m_ptr = NULL : nop();
 		free(*node_ptr);
 		*node_ptr = NULL;
 	}
@@ -49,6 +50,32 @@ PQNODE lookBackward(PQNODE pNode){
 	}
 
 	return pNode->prev;
+}
+
+PQNODE search_node_by_level(PQNODE pQHeader, PQNODE pQ, int level){
+	const char* FUNC_NAME = "search_node_by_level";
+	PQNODE tmp_ptr = NULL;
+	PMHTNode mhtnode_ptr = NULL;
+
+	if(!check_pointer_ex(pQHeader, "pQHeader", FUNC_NAME, "null pointer") || 
+		!check_pointer_ex(pQ, "pQ", FUNC_NAME, "null pointer"))
+		return NULL;
+
+	if(level < 0){
+		debug_print(FUNC_NAME, "level cannot be less than zero");
+		return NULL;
+	}
+
+	tmp_ptr = pQ;
+	while(tmp_ptr != pQHeader){
+		mhtnode_ptr = (PMHTNode)(tmp_ptr->m_ptr);
+		if(mhtnode_ptr->m_level == level)
+			return tmp_ptr;
+
+		tmp_ptr = tmp_ptr->prev;
+	}
+
+	return NULL;
 }
 
 void initQueue(PQNODE *pQHeader, PQNODE *pQ){
@@ -74,8 +101,8 @@ PQNODE enqueue(PQNODE *pQHeader, PQNODE *pQ, PQNODE pNode){
 	return pNode;
 }
 
-PQNode dequeue(PQNode *pQHeader, PQNode *pQ){
-	PQNode tmp_ptr = NULL;
+PQNODE dequeue(PQNODE *pQHeader, PQNODE *pQ){
+	PQNODE tmp_ptr = NULL;
 	if(*pQ == *pQHeader){	// empty queue
 		printf("Empty queue.\n");
 		return NULL;
@@ -87,14 +114,14 @@ PQNode dequeue(PQNode *pQHeader, PQNode *pQ){
 	else
 		*pQ = *pQHeader;
 
-	(*pQHeader)->m_length > 0 ? (*pQHeader)->m_length-- : nop();
+	(*pQHeader)->m_qsize > 0 ? (*pQHeader)->m_qsize-- : nop();
 
 	return tmp_ptr;
 }
 
-PQNode dequeue_sub(PQNode *pQHeader, PQNode *pQ){
-	PQNode tmp_ptr = NULL;
-	PQNode first_elem_ptr = NULL;
+PQNODE dequeue_sub(PQNODE *pQHeader, PQNODE *pQ){
+	PQNODE tmp_ptr = NULL;
+	PQNODE first_elem_ptr = NULL;
 	if(*pQ == *pQHeader){	// empty queue
 		printf("Empty queue.\n");
 		return NULL;
@@ -113,13 +140,13 @@ PQNode dequeue_sub(PQNode *pQHeader, PQNode *pQ){
 	else
 		*pQ = first_elem_ptr;
 
-	(*pQHeader)->m_length > 0 ? (*pQHeader)->m_length-- : nop();
+	(*pQHeader)->m_qsize > 0 ? (*pQHeader)->m_qsize-- : nop();
 
 	return tmp_ptr;
 }
 
-PQNode dequeue_sppos(PQNode *pQHeader, PQNode *pQ, PQNode pos) {
-	PQNode tmp_ptr = NULL;
+PQNODE dequeue_sppos(PQNODE *pQHeader, PQNODE *pQ, PQNODE pos) {
+	PQNODE tmp_ptr = NULL;
 	
 	if(*pQ == *pQHeader){	// empty queue
 		printf("Empty queue.\n");
@@ -140,19 +167,19 @@ PQNode dequeue_sppos(PQNode *pQHeader, PQNode *pQ, PQNode pos) {
 		return dequeue(pQHeader, pQ);
 	}
 	
-	(*pQHeader)->m_length > 0 ? (*pQHeader)->m_length-- : nop();
+	(*pQHeader)->m_qsize > 0 ? (*pQHeader)->m_qsize-- : nop();
 
 	return tmp_ptr;
 }
 
-PQNode peekQueue(PQNode pQHeader){
+PQNODE peekQueue(PQNODE pQHeader){
 	if(pQHeader && pQHeader->next)
-		return (PQNode)(pQHeader->next);
+		return (PQNODE)(pQHeader->next);
 	return NULL;
 }
 
-void freeQueue(PQNode *pQHeader, PQNode *pQ) {
-	PQNode tmp_ptr = NULL;
+void freeQueue(PQNODE *pQHeader, PQNODE *pQ) {
+	PQNODE tmp_ptr = NULL;
 	if(!(*pQHeader))
 		return;
 	tmp_ptr = (*pQHeader)->next;
@@ -162,7 +189,8 @@ void freeQueue(PQNode *pQHeader, PQNode *pQ) {
 		return;
 	}
 	while(tmp_ptr = dequeue(pQHeader, pQ)){
-		tmp_ptr->m_MHTNode_ptr != NULL ? free(tmp_ptr->m_MHTNode_ptr) : nop();
+		/* NOTE: this function will release the memory that m_ptr takes */
+		tmp_ptr->m_ptr != NULL ? free(tmp_ptr->m_ptr) : nop();
 		free(tmp_ptr);
 		tmp_ptr = NULL;
 	}
@@ -171,8 +199,8 @@ void freeQueue(PQNode *pQHeader, PQNode *pQ) {
 	return;
 }
 
-void freeQueue2(PQNode *pQHeader){
-	PQNode tmp_ptr = NULL;
+void freeQueue2(PQNODE *pQHeader){
+	PQNODE tmp_ptr = NULL;
 	if(!(*pQHeader))
 		return;
 	tmp_ptr = (*pQHeader)->next;
@@ -185,7 +213,8 @@ void freeQueue2(PQNode *pQHeader){
 		(*pQHeader)->next = tmp_ptr->next;
 		if(tmp_ptr->next) {
 			tmp_ptr->next->prev = *pQHeader;
-			tmp_ptr->m_MHTNode_ptr != NULL ? free(tmp_ptr->m_MHTNode_ptr) : nop();
+			/* NOTE: this function will release the memory that m_ptr takes */
+			tmp_ptr->m_ptr != NULL ? free(tmp_ptr->m_ptr) : nop();
 			free(tmp_ptr);
 		}
 	}
@@ -194,8 +223,8 @@ void freeQueue2(PQNode *pQHeader){
 	return;
 }
 
-void freeQueue3(PQNode *pQ) {
-	PQNode tmp_ptr = NULL;
+void freeQueue3(PQNODE *pQ) {
+	PQNODE tmp_ptr = NULL;
 	if(!(*pQ))
 		return;
 	tmp_ptr = *pQ;
@@ -210,8 +239,9 @@ void freeQueue3(PQNode *pQ) {
 
 /********* Test & Debug ********/
 
-void printQueue(PQNode pQHeader) {
-	PQNode tmp_ptr = NULL;
+void printQueue(PQNODE pQHeader) {
+	PQNODE tmp_ptr = NULL;
+	PMHTNode mhtnode_ptr = NULL;
 	uint32 i = 1;
 
 	if(!pQHeader){
@@ -221,7 +251,8 @@ void printQueue(PQNode pQHeader) {
 
 	tmp_ptr = pQHeader->next;
 	while(tmp_ptr){
-		printf("%d: PageNo-Level: %d-%d\n", i, tmp_ptr->m_MHTNode_ptr->m_pageNo, tmp_ptr->m_level);
+		mhtnode_ptr = (PMHTNode)(tmp_ptr->m_ptr);
+		printf("%d: PageNo-Level: %d-%d\n", i, mhtnode_ptr->m_pageNo, mhtnode_ptr->m_level);
 		tmp_ptr = tmp_ptr->next;
 		i++;
 	}
@@ -230,39 +261,42 @@ void printQueue(PQNode pQHeader) {
 }
 
 
-void print_qnode_info(PQNode qnode_ptr){
+void print_qnode_info(PQNODE qnode_ptr){
 	if(!qnode_ptr){
 		check_pointer(qnode_ptr, "qnode_ptr");
 		debug_print("print_qnode_info", "Null parameters");
 		return;
 	}
 
-	printf("PageNo|Level|LCPN|LCOS|RCPN|RCOS|PPN|POS: %d|%d|%d|%d|%d|%d|%d|%d\t", 
-			qnode_ptr->m_MHTNode_ptr->m_pageNo, 
-			qnode_ptr->m_level,
-			qnode_ptr->m_MHTNode_ptr->m_lchildPageNo,
-			qnode_ptr->m_MHTNode_ptr->m_lchildOffset,
-			qnode_ptr->m_MHTNode_ptr->m_rchildPageNo,
-			qnode_ptr->m_MHTNode_ptr->m_rchildOffset,
-			qnode_ptr->m_MHTNode_ptr->m_parentPageNo,
-			qnode_ptr->m_MHTNode_ptr->m_parentOffset);
+	PMHTNode mhtnode_ptr = (PMHTNode)(qnode_ptr->m_ptr);
+
+	printf("PageNo|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\t", 
+			mhtnode_ptr->m_pageNo, 
+			mhtnode_ptr->m_level,
+			(int)mhtnode_ptr->m_is_supplement_node,
+			mhtnode_ptr->m_lchild->m_pageNo,
+			mhtnode_ptr->m_lchild->m_level,
+			mhtnode_ptr->m_rchild->m_pageNo,
+			mhtnode_ptr->m_rchild->m_level);
 
 	return;
 }
 
-void print_qnode_info_ex(PQNode qnode_ptr, uint32 flags){
-	const char* THIS_FUNC_NAME = "printQNode";
+void print_qnode_info_ex(PQNODE qnode_ptr, uint32 flags){
+	const char* FUNC_NAME = "printQNode";
 
 	if(!qnode_ptr){
-		check_pointer_ex(qnode_ptr, "qnode_ptr", THIS_FUNC_NAME, "null qnode_ptr");
+		check_pointer_ex(qnode_ptr, "qnode_ptr", FUNC_NAME, "null qnode_ptr");
 		return;
 	}
 
+	PMHTNode mhtnode_ptr = (PMHTNode)(qnode_ptr->m_ptr);
+
 	printf("[");
 	if(flags && PRINT_QNODE_FLAG_INDEX){
-		printf("index: %d, ", qnode_ptr->m_MHTNode_ptr->m_pageNo);
+		printf("index: %d, ", mhtnode_ptr->m_pageNo);
 	}
 	if(flags && PRINT_QNODE_FLAG_HASH){
-		print_hash_value(qnode_ptr->m_MHTNode_ptr->m_hash);
+		print_hash_value(mhtnode_ptr->m_hash);
 	}
 }

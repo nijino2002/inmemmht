@@ -8,7 +8,7 @@ typedef struct  _MHTNode
 	int 	m_pageNo;
 	char	m_hash[32];
 	int     m_level;
-	int 	m_is_supplement_node;
+	bool 	m_is_supplement_node;
 	struct _MHTNode* m_lchild;
 	struct _MHTNode* m_rchild;
 	/* a minus offset indicates the distance that the file pointer has to move back 

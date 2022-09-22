@@ -15,8 +15,8 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot){
 	PMHTNode sub_root2 = NULL;
 	unsigned char* hash_buffer = NULL;
 	SHA256_CTX ctx;
-	PQNode pQHeader = NULL;
-	PQNode pQ = NULL;	// tail
+	PQNODE pQHeader = NULL;
+	PQNODE pQ = NULL;	// tail
 
 	if (!check_pointer_ex(pds, "pds", FUNC_NAME, "Null pointer")){
 		ret_val = -1;
@@ -38,17 +38,7 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot){
 		}
 		node = makeMHTNode(pds->m_pDE[i].m_index, NODELEVEL_LEAF, hash_buffer);
 
-		if(!(*pmhtroot))	// MHT root is null
-			*pmhtroot = node;
-		else if((*pmhtroot)->m_level == NODELEVEL_LEAF) { // MHT root is a leaf node
-			sub_root = combineNodes(*pmhtroot, node);
-			*pmhtroot = sub_root;
-			sub_root = NULL;
-		}
-		else{ // MHT root level != node's level ( usually '>' )
-			enqueue(&pQHeader, &pQ, makeQNode(node, NODELEVEL_LEAF));
-
-		}
+		
 	} // for
 
 RETURN:	
@@ -61,48 +51,52 @@ int verify_spfc_dataelem_int(IN PMHTNode pmht){
 	return ret_val;
 }
 
-
-void combine_nodes_with_same_levels(PQNode *pQHeader, 
-                                    PQNode *pQ){
-	const char* FUNC_NAME = "combine_nodes_with_same_levels";
-	PQNode lchild_ptr = NULL;
-	PQNode rchild_ptr = NULL;
-	PQNode cbd_qnode_ptr = NULL;
-	PQNode tmp_node_ptr = NULL;
-	PQNode popped_qnode_ptr = NULL;
+int process_queue(PQNODE *pQHeader, PQNODE *pQ){
+	const char* FUNC_NAME = "process_queue";
+	int ret_val = 0;
 	bool bCombined = FALSE;
+	bool bDequeueExec = FALSE;
+	PQNODE qnode_ptr = NULL;
+	PQNODE bkwd_ptr = NULL;
+	PQNODE lchild_ptr = NULL, rchild_ptr = NULL;
+	PQNODE cbd_qnode_ptr = NULL;
+	PMHTNode cbd_mhtnode_ptr = NULL;
 
-	if(!(*pQHeader) || !(*pQ) || (*pQHeader) == (*pQ)){
-		check_pointer_ex(*pQHeader, "*pQHeader", THIS_FUNC_NAME, "null *pQHeader");
-		check_pointer_ex(*pQ, "*pQ", THIS_FUNC_NAME, "null *pQ");
-		debug_print(THIS_FUNC_NAME, "queue is null");
-		return;
+	if(!check_pointer_ex(*pQHeader, "*pQHeader", FUNC_NAME, "null pointer") || 
+		!check_pointer_ex(*pQ, "*pQ", FUNC_NAME, "null pointer")){
+		return -1;
 	}
 
-	while(*pQ && (*pQ)->prev && (*pQ)->prev != (*pQHeader) && (*pQ)->m_level == (*pQ)->prev->m_level){
-		lchild_ptr = (*pQ)->prev;
-		rchild_ptr = (*pQ);
-		cbd_qnode_ptr = makeCombinedQNode(lchild_ptr, rchild_ptr);
-		bCombined = TRUE;
-		check_pointer_ex(cbd_qnode_ptr, "cbd_qnode_ptr", FUNC_NAME, "creating cbd_qnode_ptr failed");
-		enqueue(pQHeader, pQ, cbd_qnode_ptr);
+	qnode_ptr = *pQ;
+	while((bkwd_ptr = lookBackward(qnode_ptr)) && bkwd_ptr != *pQHeader){
+		if(((PMHTNode)(bkwd_ptr->m_ptr))->m_level > ((PMHTNode)((*pQ)->m_ptr))->m_level)
+			break;
+		if(((PMHTNode)(bkwd_ptr->m_ptr))->m_level == ((PMHTNode)((*pQ)->m_ptr))->m_level) {
+			lchild_ptr = bkwd_ptr;
+			rchild_ptr = *pQ;
+			cbd_mhtnode_ptr = combineNodes((PMHTNode)(lchild_ptr->m_ptr), (PMHTNode)(rchild_ptr->m_ptr));
+			check_pointer_ex(cbd_mhtnode_ptr, "cbd_mhtnode_ptr", FUNC_NAME, "null pointer");
+			cbd_qnode_ptr = makeQNode(cbd_mhtnode_ptr);
+			bCombined = TRUE;
+			check_pointer_ex(cbd_qnode_ptr, "cbd_qnode_ptr", FUNC_NAME, "null pointer");
+			enqueue(pQHeader, pQ, cbd_qnode_ptr);
+		}
 
-		
+		qnode_ptr = qnode_ptr->prev;
+	}
 
-		tmp_node_ptr = (*pQ)->prev->prev;
-		popped_qnode_ptr = dequeue_sppos(pQHeader, pQ, tmp_node_ptr);
-		if(!popped_qnode_ptr->m_is_written){
-			print_qnode_info(popped_qnode_ptr); println();
-			memset(mht_block_buffer, 0, mht_block_buffer_len);
-			qnode_to_mht_buffer(popped_qnode_ptr, &mht_block_buffer, mht_block_buffer_len);
-			/*
+	//dequeue till encountering the new created combined node
+	if(bCombined) {
+		while ((peeked_qnode_ptr = peekQueue(*pQHeader)) && peeked_qnode_ptr->m_level < cbd_qnode_ptr->m_level) {
+			popped_qnode_ptr = dequeue(pQHeader, pQ);
+			check_pointer(popped_qnode_ptr, "popped_qnode_ptr");
+
+			// Building MHT blocks based on dequeued nodes, then writing to MHT file.
+			mhtblk_buffer = (uchar*) malloc(MHT_BLOCK_SIZE);
+			memset(mhtblk_buffer, 0, MHT_BLOCK_SIZE);
+			qnode_to_mht_buffer(popped_qnode_ptr, &mhtblk_buffer, MHT_BLOCK_SIZE);
+
 			// record the offset of the first supplementary leaf node
-			if(!get_isEncounterFSLO() && 
-				popped_qnode_ptr->m_level == NODELEVEL_LEAF && 
-				popped_qnode_ptr->m_MHTNode_ptr->m_pageNo >= UNASSIGNED_INDEX){
-				set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(of_fd, 0, SEEK_CUR));
-				set_isEncounterFSLO(TRUE);
-			}*/
 			if(popped_qnode_ptr->m_level == NODELEVEL_LEAF && 
 				popped_qnode_ptr->m_MHTNode_ptr->m_pageNo >= UNASSIGNED_INDEX){
 				// mark the supplementary leaf node
@@ -111,100 +105,30 @@ void combine_nodes_with_same_levels(PQNode *pQHeader,
 				// record the offset of the first supplementary leaf node
 				if(!get_isEncounterFSLO())
 				{
-					set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(of_fd, 0, SEEK_CUR));
+					set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(g_mhtFileFD, 0, SEEK_CUR));
+					printf("FROM process_all_pages_fv: FSOS: %d\n", get_mhtFirstSplymtLeafOffset());
 					set_isEncounterFSLO(TRUE);
 				}
 			}
 
-			fo_update_mht_block2(of_fd, 
-							 mht_block_buffer,
-							 mht_block_buffer_len,
-							 0,
-							 SEEK_CUR);
-			fsync(of_fd);
-			popped_qnode_ptr->m_is_written = TRUE;
-			deleteQNode(&popped_qnode_ptr);
-		}
-		else{	// popped_qnode_ptr->m_is_written is TRUE
-			// update index info. of the corresponding block in the MHT file
-			if(popped_qnode_ptr->m_level > NODELEVEL_LEAF && popped_qnode_ptr->m_is_written){
-				update_mht_block_index_info(of_fd, popped_qnode_ptr);
-#ifdef PRINT_INFO_ENABLED
-				printf("UPDATED pQ->prev->prev INDEX\n");
-#endif
+			if(g_mhtFileFD > 0) {
+				fo_update_mht_block(g_mhtFileFD, mhtblk_buffer, MHT_BLOCK_SIZE, 0, SEEK_CUR);
 			}
+			free(mhtblk_buffer); mhtblk_buffer = NULL;
+
+			print_qnode_info(popped_qnode_ptr);
+
+			deleteQNode(&popped_qnode_ptr);
+			bDequeueExec = TRUE;
+		} //while
+
+		if(bDequeueExec){
+			printf("\n\n");
 		}
 
-		tmp_node_ptr = (*pQ)->prev;
-		popped_qnode_ptr = dequeue_sppos(pQHeader, pQ, tmp_node_ptr);
-		if(!popped_qnode_ptr->m_is_written){
-#ifdef PRINT_INFO_ENABLED
-			print_qnode_info(popped_qnode_ptr); println();
-#endif
-			memset(mht_block_buffer, 0, mht_block_buffer_len);
-			qnode_to_mht_buffer(popped_qnode_ptr, &mht_block_buffer, mht_block_buffer_len);
-			/*
-			// record the offset of the first supplementary leaf node
-			if(!get_isEncounterFSLO() && 
-				popped_qnode_ptr->m_level == NODELEVEL_LEAF && 
-				popped_qnode_ptr->m_MHTNode_ptr->m_pageNo >= UNASSIGNED_INDEX){
-				set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(of_fd, 0, SEEK_CUR));
-				set_isEncounterFSLO(TRUE);
-			}
-			*/
-			if(popped_qnode_ptr->m_level == NODELEVEL_LEAF && 
-				popped_qnode_ptr->m_MHTNode_ptr->m_pageNo >= UNASSIGNED_INDEX){
-				// mark the supplementary leaf node
-				popped_qnode_ptr->m_is_supplementary_node = TRUE;
-				popped_qnode_ptr->m_is_zero_node = TRUE;
-				// record the offset of the first supplementary leaf node
-				if(!get_isEncounterFSLO())
-				{
-					set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(of_fd, 0, SEEK_CUR));
-					set_isEncounterFSLO(TRUE);
-				}
-			}
-			
-			fo_update_mht_block2(of_fd, 
-							 mht_block_buffer,
-							 mht_block_buffer_len,
-							 0,
-							 SEEK_CUR);
-			fsync(of_fd);
-			popped_qnode_ptr->m_is_written = TRUE;
-			deleteQNode(&popped_qnode_ptr);
-		}
-		else{	// popped_qnode_ptr->m_is_written is TRUE
-			// update index info. of the corresponding block in the MHT file
-			if(popped_qnode_ptr->m_level > NODELEVEL_LEAF && popped_qnode_ptr->m_is_written){
-				update_mht_block_index_info(of_fd, popped_qnode_ptr);
-#ifdef PRINT_INFO_ENABLED
-				printf("UPDATED pQ->prev INDEX\n");
-#endif
-			}
-		}
-
-		if(!(*pQ)->m_is_written){
-#ifdef PRINT_INFO_ENABLED
-			print_qnode_info(*pQ); println();
-#endif
-			(*pQ)->m_is_written = TRUE;
-			memset(mht_block_buffer, 0, mht_block_buffer_len);
-			qnode_to_mht_buffer(*pQ, &mht_block_buffer, mht_block_buffer_len);
-			fo_update_mht_block2(of_fd, 
-							 mht_block_buffer,
-							 mht_block_buffer_len,
-							 0,
-							 SEEK_CUR);
-			fsync(of_fd);
-		}
-#ifdef PRINT_INFO_ENABLED
-		printQueue(*pQHeader);
-#endif
+		bDequeueExec = FALSE;
 		bCombined = FALSE;
-	} // while
+	}// if
 
-	free(mht_block_buffer);
-
-	return;
+	return ret_val;
 }
