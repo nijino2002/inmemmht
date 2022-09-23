@@ -143,3 +143,19 @@ PMHTNode get_the_right_most_child(PMHTNode node){
 
 	return node_ptr;
 }
+
+void print_mhtnode_info(PMHTNode mhtnode_ptr){
+	if(!mhtnode_ptr)
+		return;
+
+	printf("Index|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\t", 
+			mhtnode_ptr->m_pageNo, 
+			mhtnode_ptr->m_level,
+			(int)mhtnode_ptr->m_is_supplement_node,
+			mhtnode_ptr->m_lchild->m_pageNo,
+			mhtnode_ptr->m_lchild->m_level,
+			mhtnode_ptr->m_rchild->m_pageNo,
+			mhtnode_ptr->m_rchild->m_level);
+
+	return;
+}

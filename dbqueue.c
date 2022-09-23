@@ -32,7 +32,7 @@ PQNODE makeQNode(PMHTNode pmhtnode){
 
 void deleteQNode(PQNODE *node_ptr){
 	if(*node_ptr){
-		/* NOTE: the MHT node within the queue node will not be released */
+		/* NOTE: the MHT node within the queue node will NOT be released */
 		(*node_ptr)->m_ptr ? (*node_ptr)->m_ptr = NULL : nop();
 		free(*node_ptr);
 		*node_ptr = NULL;

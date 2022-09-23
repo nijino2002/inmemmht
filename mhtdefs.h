@@ -86,4 +86,6 @@ void generateCombinedHash_SHA256(char *hash1, char *hash2, char *buf, uint32 buf
 
 PMHTNode get_the_right_most_child(PMHTNode node);
 
+void print_mhtnode_info(PMHTNode mhtnode_ptr);
+
 #endif

@@ -18,6 +18,7 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot){
 	PQNODE pQHeader = NULL;
 	PQNODE pQ = NULL;	// tail
 	PQNODE new_qnode = NULL;
+	PQNODE popped_qnode_ptr = NULL;
 
 	if (!check_pointer_ex(pds, "pds", FUNC_NAME, "Null pointer")){
 		ret_val = -1;
@@ -44,6 +45,30 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot){
 		
 		process_queue(&pQHeader, &pQ);
 	} // for
+
+	if(pQHeader->m_qsize > 1){
+		deal_with_remaining_nodes_in_queue(&pQHeader, &pQ);
+	}
+
+	//dequeue remaining nodes (actually, only root node remains)
+	popped_qnode_ptr = dequeue(&pQHeader, &pQ);
+	check_pointer_ex(popped_qnode_ptr, "popped_qnode_ptr", FUNC_NAME, "null pointer");
+	print_qnode_info(popped_qnode_ptr);
+	*pmhtroot = TOMHTNODE(popped_qnode_ptr);
+	deleteQNode(&popped_qnode_ptr);
+
+	freeQueue(&pQHeader, &pQ);
+
+	/*
+	while(popped_qnode_ptr = dequeue(&pQHeader, &pQ)){
+		check_pointer_ex(popped_qnode_ptr, "popped_qnode_ptr", FUNC_NAME, "null pointer");
+	
+		print_qnode_info(popped_qnode_ptr);
+
+		// free queue node
+		deleteQNode(&popped_qnode_ptr);
+	} //while
+	*/
 
 RETURN:	
 	return ret_val;
@@ -145,7 +170,7 @@ void deal_with_remaining_nodes_in_queue(PQNODE *pQHeader, PQNODE *pQ){
 	// Both of these two pointer cannot be NULL.
 	if(!*pQHeader || !*pQ){
 		check_pointer_ex(*pQHeader, "*pQHeader", FUNC_NAME, "null pointer");
-		check_pointer(*pQ, "*pQ", FUNC_NAME, "null pointer");
+		check_pointer_ex(*pQ, "*pQ", FUNC_NAME, "null pointer");
 		return;
 	}
 
@@ -189,50 +214,22 @@ void deal_with_remaining_nodes_in_queue(PQNODE *pQHeader, PQNODE *pQ){
 			} //if
 			current_qnode_ptr = current_qnode_ptr->prev;
 		} // while
-		if(bCombined) {	/* MODIFICATION HERE 2022.9.22 */
+		if(bCombined) {	
 			while((peeked_qnode_ptr = peekQueue(*pQHeader)) && 
-				   peeked_qnode_ptr->m_level < cbd_qnode_ptr->m_level) {
+				   TOMHTNODE(peeked_qnode_ptr)->m_level < TOMHTNODE(cbd_qnode_ptr)->m_level) {
 				popped_qnode_ptr = dequeue(pQHeader, pQ);
-				check_pointer(popped_qnode_ptr, "popped_qnode_ptr");
-				// Building MHT blocks based on dequeued nodes, then writing to MHT file.
-				mhtblk_buffer = (uchar*) malloc(MHT_BLOCK_SIZE);
-				memset(mhtblk_buffer, 0, MHT_BLOCK_SIZE);
-				qnode_to_mht_buffer(popped_qnode_ptr, &mhtblk_buffer, MHT_BLOCK_SIZE);
-				if(fd > 0) {
-					// record the first supplementary leaf node offset to g_mhtFirstSplymtLeafOffset
-					if(	popped_qnode_ptr->m_MHTNode_ptr->m_pageNo == UNASSIGNED_INDEX && 
-						popped_qnode_ptr->m_level == 0)
-					{
-						popped_qnode_ptr->m_is_supplementary_node = TRUE;
-						popped_qnode_ptr->m_is_zero_node = TRUE;
-						if(!get_isEncounterFSLO()){
-							set_mhtFirstSplymtLeafOffset(fo_locate_mht_pos(fd, 0, SEEK_CUR));
-							printf("FROM deal_with_remaining_nodes_in_queue: FSOS: %d\n", get_mhtFirstSplymtLeafOffset());
-							set_isEncounterFSLO(TRUE);
-						}
-					}
-					/*
-					if(!bEnctrFirstSplymtLeaf && 
-						popped_qnode_ptr->m_MHTNode_ptr->m_pageNo == UNASSIGNED_PAGENO && 
-						popped_qnode_ptr->m_level == 0) {
-						g_mhtFirstSplymtLeafOffset = fo_locate_mht_pos(fd, 0, SEEK_CUR);
-						bEnctrFirstSplymtLeaf = TRUE;
-					}
-					*/
-					fo_update_mht_block(fd, mhtblk_buffer, MHT_BLOCK_SIZE, 0, SEEK_CUR);
-				}
-				free(mhtblk_buffer); mhtblk_buffer = NULL;
-#ifdef PRINT_INFO_ENABLED
+				check_pointer_ex(popped_qnode_ptr, "popped_qnode_ptr", FUNC_NAME, "null pointer");
+				
 				print_qnode_info(popped_qnode_ptr);
-#endif
+
 				deleteQNode(&popped_qnode_ptr);
 				bDequeueExec = TRUE;
 			} // while
-#ifdef PRINT_INFO_ENABLED
+
 			if(bDequeueExec){
 				printf("\n\n");
 			}
-#endif
+
 			bDequeueExec = FALSE;
 			bCombined = FALSE;
 		}// if
@@ -258,4 +255,14 @@ int get_the_last_leaf_node_index(PQNODE pQHeader, PQNODE pQ){
 	}
 
 	return UNASSIGNED_INDEX;
+}
+
+void print_mht_preorder(PMHTNode pmhtroot){
+	if(!pmhtroot){
+		return;
+	}
+
+	print_mhtnode_info(pmhtroot);
+	print_mht_preorder(pmhtroot->m_lchild);
+	print_mht_preorder(pmhtroot->m_rchild);
 }

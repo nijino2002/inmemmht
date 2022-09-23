@@ -73,3 +73,23 @@ void gen_hashed_ds_file(const char* file_name, int data_block_num, int string_le
 
 	close(fd);
 }
+
+void gen_ds(int data_block_num, int string_len, OUT PDATA_SET *pds){
+	int i = 0;
+	int index = 0;
+	char* gen_str = NULL;
+	PDATA_SET pds_ptr = NULL;
+
+	pds_ptr = (PDATA_SET) malloc (sizeof(DATA_SET));
+	pds_ptr->m_is_hashed = FALSE;
+
+	for(i = 0; i < data_block_num; i++){
+		index = i + 1;
+		memset(buffer, 0, buffer_len);
+		memcpy(buffer, &index, sizeof(uint32));
+		gen_str = generate_random_string(string_len);
+		memcpy(buffer + sizeof(uint32), gen_str, string_len);
+		free(gen_str); gen_str = NULL;
+		write(fd, buffer, buffer_len);
+	}
+}

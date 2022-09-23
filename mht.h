@@ -7,6 +7,8 @@
 #include "sha256.h"
 #include "dbqueue.h"
 
+#define TOMHTNODE(x)    ((PMHTNode)((x)->m_ptr))
+
 typedef struct _DATA_SET {
 	PDATA_ELEM m_pDE;
 	int m_size;
@@ -31,5 +33,13 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot);
  * @return     { 0 if successful }
  */
 int verify_spfc_dataelem_int(IN PMHTNode pmht);
+
+int process_queue(PQNODE *pQHeader, PQNODE *pQ);
+
+void deal_with_remaining_nodes_in_queue(PQNODE *pQHeader, PQNODE *pQ);
+
+int get_the_last_leaf_node_index(PQNODE pQHeader, PQNODE pQ);
+
+void print_mht_preorder(PMHTNode pmhtroot);
 
 #endif
