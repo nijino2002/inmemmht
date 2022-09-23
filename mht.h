@@ -15,6 +15,8 @@ typedef struct _DATA_SET {
     bool m_is_hashed;
 } DATA_SET, *PDATA_SET;
 
+void free_ds(IN PDATA_SET *pds);
+
 /**
  * @brief      Creates an MHT from a dataset with ordered indices.
  *

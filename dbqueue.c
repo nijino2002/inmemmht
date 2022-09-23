@@ -270,14 +270,14 @@ void print_qnode_info(PQNODE qnode_ptr){
 
 	PMHTNode mhtnode_ptr = (PMHTNode)(qnode_ptr->m_ptr);
 
-	printf("PageNo|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\t", 
+	printf("PageNo|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\n", 
 			mhtnode_ptr->m_pageNo, 
 			mhtnode_ptr->m_level,
 			(int)mhtnode_ptr->m_is_supplement_node,
-			mhtnode_ptr->m_lchild->m_pageNo,
-			mhtnode_ptr->m_lchild->m_level,
-			mhtnode_ptr->m_rchild->m_pageNo,
-			mhtnode_ptr->m_rchild->m_level);
+			(mhtnode_ptr->m_lchild) ? (mhtnode_ptr->m_lchild)->m_pageNo : -1,
+			(mhtnode_ptr->m_lchild) ? (mhtnode_ptr->m_lchild)->m_level : -1,
+			(mhtnode_ptr->m_rchild) ? (mhtnode_ptr->m_rchild)->m_pageNo : -1,
+			(mhtnode_ptr->m_rchild) ? (mhtnode_ptr->m_rchild)->m_level : -1);
 
 	return;
 }

@@ -148,14 +148,14 @@ void print_mhtnode_info(PMHTNode mhtnode_ptr){
 	if(!mhtnode_ptr)
 		return;
 
-	printf("Index|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\t", 
+	printf("Index|Level|ISN|LIdx|LLevel|RIdx|RLevel: %d|%d|%d|%d|%d|%d|%d\n", 
 			mhtnode_ptr->m_pageNo, 
 			mhtnode_ptr->m_level,
 			(int)mhtnode_ptr->m_is_supplement_node,
-			mhtnode_ptr->m_lchild->m_pageNo,
-			mhtnode_ptr->m_lchild->m_level,
-			mhtnode_ptr->m_rchild->m_pageNo,
-			mhtnode_ptr->m_rchild->m_level);
+			(mhtnode_ptr->m_lchild) ? (mhtnode_ptr->m_lchild)->m_pageNo : -1,
+			(mhtnode_ptr->m_lchild) ? (mhtnode_ptr->m_lchild)->m_level : -1,
+			(mhtnode_ptr->m_rchild) ? (mhtnode_ptr->m_rchild)->m_pageNo : -1,
+			(mhtnode_ptr->m_rchild) ? (mhtnode_ptr->m_rchild)->m_level : -1);
 
 	return;
 }

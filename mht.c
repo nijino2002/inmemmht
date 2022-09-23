@@ -1,5 +1,26 @@
 #include "mht.h"
 
+void free_ds(IN PDATA_SET *pds){
+	const char* FUNC_NAME = "free_ds";
+	int i = 0;
+
+	if(!check_pointer_ex(*pds, "*pds", FUNC_NAME, "null pointer"))
+		return;
+
+	for (i = 0; i < (*pds)->m_size; ++i)
+	{
+		if((*pds)->m_pDE[i].m_pdata){
+			free((*pds)->m_pDE[i].m_pdata);
+			(*pds)->m_pDE[i].m_pdata = NULL;
+		}
+	}
+
+	free((*pds)->m_pDE); (*pds)->m_pDE = NULL;
+	free(*pds); *pds = NULL;
+
+	return;
+}
+
 int create_mht_from_ordered_ds_file(const char* filename, int block_num, int block_size){
 	int ret_val = 0;
 
@@ -45,7 +66,7 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot){
 		
 		process_queue(&pQHeader, &pQ);
 	} // for
-
+	
 	if(pQHeader->m_qsize > 1){
 		deal_with_remaining_nodes_in_queue(&pQHeader, &pQ);
 	}
@@ -191,7 +212,7 @@ void deal_with_remaining_nodes_in_queue(PQNODE *pQHeader, PQNODE *pQ){
 	// temporarily storing header level
 	qHeaderLevel = ((PMHTNode)((*pQHeader)->next->m_ptr))->m_level;
 	while(((PMHTNode)((*pQ)->m_ptr))->m_level <= qHeaderLevel){
-		mhtnode_ptr = makeZeroMHTNode(last_mhtnode_index++);
+		mhtnode_ptr = makeZeroMHTNode(++last_mhtnode_index);
 		check_pointer(mhtnode_ptr, "mhtnode_ptr");
 		qnode_ptr = makeQNode(mhtnode_ptr);
 		check_pointer_ex(qnode_ptr, "qnode_ptr", FUNC_NAME, "null pointer");
