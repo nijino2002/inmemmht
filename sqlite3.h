@@ -12239,7 +12239,14 @@ struct fts5_api {
 /******** End of fts5.h *********/
 
 
-
+/**
+ * @brief      Gets page count (only for leaf table page).
+ *
+ * @param      db      The database
+ * @param[in]  dbName  The database name
+ *
+ * @return     The count.
+ */
 int getCount(sqlite3* db, const char* dbName);
 
 /**
@@ -12251,7 +12258,7 @@ int getCount(sqlite3* db, const char* dbName);
  * @param[out] dataHash  The data hash array
  * @param[in]  start     The start
  * @param[in]  end       The end
- * @param[in]  l         the size of the pgnoNums array (or dataHash array)
+ * @param[in]  l         The number of pages to be processed in one time
  *
  * @return     The information 1.
  */

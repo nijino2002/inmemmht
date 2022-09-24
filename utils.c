@@ -21,33 +21,87 @@ int get_page_count_from_db(char* dbfile_name){
     }
 
 	pg_num = getCount(db, dbfile_name);
+	//pg_num = getPageCount(db, dbfile_name);
 	sqlite3_close(db);
 
 	return pg_num;
 }
 
+int gen_page_info_array_from_db(sqlite3 *db, PDB_PAGE_INFO *pg_info_ptr){
+	int i = 0;
+	int* pgno_array = NULL;
+	int* pghash_array = NULL;
+	int page_num = 0;
+	int page_size = 0;
+
+	return 0;
+}
+
 void gen_ds_from_dbfile(IN char* db_filename, OUT PDATA_SET *pds){
+	const char* FUNC_NAME = "gen_ds_from_dbfile";
+	int i = 0;
 	PDB_PAGE_INFO pg_info_ptr = NULL;
+	PDATA_SET ds_ptr = NULL;
 	sqlite3 *db;
 	char* sql_q1 = "SELECT name FROM sqlite_master WHERE type='table'";
 	char* errmsg = NULL;
 	int pg_num = -1;
+	int* tmp_pgno_array = NULL;
+	char* tmp_hash_array = NULL;
+	int pg_num_processed = 0;
 
 	if(*pds)
-		free_ds(*pds);
+		free_ds(pds);
 
 	if(SQLITE_OK != sqlite3_open(db_filename, &db)){
     	debug_print("gen_ds_from_dbfile", "sqlite3_open error\n");
-        return -1;
+        return;
     }
 
     if(SQLITE_OK != sqlite3_exec(db,sql_q1,NULL,NULL,&errmsg)){
     	debug_print("gen_ds_from_dbfile", "process_database_info:sqlite3_exec() falied！\n");
-        return -1;
+        return;
     }
 
-    pg_num = getCount(db, dbfile_name); //get the number of db file pages
-    pg_info_ptr = (PDB_PAGE_INFO) malloc (sizeof(DB_PAGE_INFO) * pg_num);
+    pg_num = getCount(db, db_filename); //get the number of db file pages
+    tmp_pgno_array = (int*) malloc (sizeof(int) * pg_num);
+    tmp_hash_array = (char*) malloc (sizeof(char) * pg_num * SHA256_BLOCK_SIZE);
+    memset(tmp_hash_array, 0, sizeof(char) * pg_num * SHA256_BLOCK_SIZE);
+
+    pg_num_processed = getInfo1(db, db_filename, 
+    							(unsigned int*)tmp_pgno_array, 
+    							(unsigned char*)tmp_hash_array, 1, 0x7fffffff, pg_num);
+
+    printf("Processed %d pages.\n", pg_num_processed);
+
+    /* copying tmp_pgno_array and tmp_hash_array into pg_info_ptr */
+    pg_info_ptr = (PDB_PAGE_INFO) malloc (sizeof(DB_PAGE_INFO) * pg_num_processed);
+    for (i = 0; i < pg_num_processed; ++i){
+    	pg_info_ptr[i].m_pg_index = *(tmp_pgno_array + i);
+    	memcpy(pg_info_ptr[i].m_hash, (tmp_hash_array + i * SHA256_BLOCK_SIZE), SHA256_BLOCK_SIZE);
+    }
+
+    free(tmp_pgno_array);
+    free(tmp_hash_array);
+
+    // building dataset
+    ds_ptr = (PDATA_SET) malloc (sizeof(DATA_SET));
+    check_pointer_ex(ds_ptr, "ds_ptr", FUNC_NAME, "null pointer");
+    ds_ptr->m_pDE = (PDATA_ELEM) malloc (sizeof(DATA_ELEM) * pg_num_processed);
+    ds_ptr->m_size = pg_num_processed;
+    ds_ptr->m_is_hashed = TRUE;
+    // print_pg_info_vector(pg_info_ptr, pg_num_processed);
+    for (i = 0; i < ds_ptr->m_size; ++i)
+    {
+    	ds_ptr->m_pDE[i].m_index = pg_info_ptr[i].m_pg_index;
+    	ds_ptr->m_pDE[i].m_pdata = (unsigned char*) malloc(SHA256_BLOCK_SIZE);
+    	memcpy(ds_ptr->m_pDE[i].m_pdata, pg_info_ptr[i].m_hash, SHA256_BLOCK_SIZE);
+    	ds_ptr->m_pDE[i].m_data_len = SHA256_BLOCK_SIZE;
+    }
+
+    print_ds_with_hash(ds_ptr);
+
+    *pds = ds_ptr;
 
     return;
 }
@@ -170,4 +224,40 @@ void print_ds(IN PDATA_SET pds){
 		printf("Index|Data: %d | %s\n", pds->m_pDE[i].m_index, out_buffer);
 	}
 	free(out_buffer);
+}
+
+void print_ds_with_hash(IN PDATA_SET pds){
+	int i = 0;
+	unsigned char* out_buffer = NULL;
+	int out_buffer_len = 0;
+
+	if(!pds){
+		printf("Parameter %s is null.\n", "pds");
+		return;
+	}
+
+	out_buffer_len = pds->m_pDE[0].m_data_len * 2 + 1;
+	out_buffer = (unsigned char*) malloc (out_buffer_len);
+
+	for (i = 0; i < pds->m_size; ++i)
+	{
+		memset(out_buffer, 0, out_buffer_len);
+		convert_hash_to_string((BYTE*)(pds->m_pDE[i].m_pdata), out_buffer, out_buffer_len);
+		printf("Index|Data: %d | %s\n", pds->m_pDE[i].m_index, out_buffer);
+	}
+	free(out_buffer);
+}
+
+void print_pg_info_vector(PDB_PAGE_INFO pdb_pg_info, int pg_num){
+	unsigned char sha256_string[SHA256_BLOCK_SIZE * 2 + 1] = {0};
+	int i = 0;
+
+	for (i = 0; i < pg_num; ++i)
+	{
+		memset(sha256_string, 0, SHA256_BLOCK_SIZE * 2 + 1);
+		convert_hash_to_string(pdb_pg_info[i].m_hash, sha256_string, SHA256_BLOCK_SIZE * 2 + 1);
+		printf("PageNo: %d, Hash: %s\n", pdb_pg_info[i].m_pg_index, sha256_string);
+	}
+
+	return;
 }

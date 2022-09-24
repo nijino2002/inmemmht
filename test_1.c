@@ -9,6 +9,7 @@ int main(int argc, char const *argv[])
 	PDATA_SET pds = NULL;
 	PMHTNode pmhtroot = NULL;
 	// gen_hashed_ds_file("./testds.ds", 10, 64);
+	/*
 	gen_ds(100, 64, &pds);
 	print_ds(pds);
 	create_mht_from_ordered_ds(pds, &pmhtroot);
@@ -16,8 +17,11 @@ int main(int argc, char const *argv[])
 	print_mht_preorder(pmhtroot);
 
 	free_mht_postorder(&pmhtroot);
+	*/
 
-	printf("Database contains %d pages.\n", get_page_count_from_db("./aes_cbc_128.db"));
+	printf("Database contains %d leaf table pages.\n", get_page_count_from_db("./aes_cbc_128.db"));
+
+	gen_ds_from_dbfile("./aes_cbc_128.db", &pds);
 
 	return 0;
 }
