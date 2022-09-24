@@ -95,7 +95,7 @@ RETURN:
 	return ret_val;
 }
 
-int verify_spfc_dataelem_int(IN PMHTNode pmht){
+int verify_spfc_dataelem_int(IN PMHTNode pmhtroot, IN int pgno){
 	int ret_val = 0;
 
 	return ret_val;

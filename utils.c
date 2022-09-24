@@ -99,7 +99,7 @@ void gen_ds_from_dbfile(IN char* db_filename, OUT PDATA_SET *pds){
     	ds_ptr->m_pDE[i].m_data_len = SHA256_BLOCK_SIZE;
     }
 
-    print_ds_with_hash(ds_ptr);
+    // print_ds_with_hash(ds_ptr);
 
     *pds = ds_ptr;
 

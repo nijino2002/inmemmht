@@ -34,7 +34,7 @@ int create_mht_from_ordered_ds(IN PDATA_SET pds, OUT PMHTNode *pmhtroot);
  *
  * @return     { 0 if successful }
  */
-int verify_spfc_dataelem_int(IN PMHTNode pmht);
+int verify_spfc_dataelem_int(IN PMHTNode pmhtroot, IN int pgno);
 
 int process_queue(PQNODE *pQHeader, PQNODE *pQ);
 
