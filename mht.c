@@ -287,3 +287,16 @@ void print_mht_preorder(PMHTNode pmhtroot){
 	print_mht_preorder(pmhtroot->m_lchild);
 	print_mht_preorder(pmhtroot->m_rchild);
 }
+
+void free_mht_postorder(PMHTNode *pmhtroot){
+	if(!*pmhtroot){
+		return;
+	}
+
+	free_mht_postorder(&((*pmhtroot)->m_lchild));
+	free_mht_postorder(&((*pmhtroot)->m_rchild));
+	if(!*pmhtroot){
+		free(*pmhtroot);
+		*pmhtroot = NULL;
+	}
+}

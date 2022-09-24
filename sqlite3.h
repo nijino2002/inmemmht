@@ -34,7 +34,7 @@
 #define SQLITE3_H
 #include <stdarg.h>     /* Needed for the definition of va_list */
 
-#include <openssl/sha.h>
+// #include <openssl/sha.h>
 
 /*
 ** Make sure we can call this stuff from C++.
@@ -12237,3 +12237,23 @@ struct fts5_api {
 #endif /* _FTS5_H */
 
 /******** End of fts5.h *********/
+
+
+
+int getCount(sqlite3* db, const char* dbName);
+
+/**
+ * @brief      Get the number of each db page and hash the content of each page.
+ *
+ * @param      db        The database object pointer
+ * @param[in]  dbName    The database name
+ * @param[out] pgnoNums  The page number array
+ * @param[out] dataHash  The data hash array
+ * @param[in]  start     The start
+ * @param[in]  end       The end
+ * @param[in]  l         the size of the pgnoNums array (or dataHash array)
+ *
+ * @return     The information 1.
+ */
+int getInfo1(sqlite3* db, const char* dbName, unsigned int* pgnoNums, 
+  unsigned char* dataHash,const unsigned start, const unsigned end, const unsigned int l);

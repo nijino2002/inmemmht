@@ -2,6 +2,55 @@
 #include "dataelem.h"
 #include "sha256.h"
 #include "mht.h"
+#include "sqlite3.h"
+
+int get_page_count_from_db(char* dbfile_name){
+	sqlite3 *db;
+	char* errmsg = NULL;
+	int pg_num = -1;
+
+	if(SQLITE_OK != sqlite3_open(dbfile_name, &db)){
+    	debug_print("get_page_count_from_db", "sqlite3_open error\n");
+        return -1;
+    }
+
+    char* sql = "SELECT name FROM sqlite_master WHERE type='table'";
+    if(SQLITE_OK != sqlite3_exec(db,sql,NULL,NULL,&errmsg)){
+    	debug_print("get_page_count_from_db", "process_database_info:sqlite3_exec() falied！\n");
+        return -1;
+    }
+
+	pg_num = getCount(db, dbfile_name);
+	sqlite3_close(db);
+
+	return pg_num;
+}
+
+void gen_ds_from_dbfile(IN char* db_filename, OUT PDATA_SET *pds){
+	PDB_PAGE_INFO pg_info_ptr = NULL;
+	sqlite3 *db;
+	char* sql_q1 = "SELECT name FROM sqlite_master WHERE type='table'";
+	char* errmsg = NULL;
+	int pg_num = -1;
+
+	if(*pds)
+		free_ds(*pds);
+
+	if(SQLITE_OK != sqlite3_open(db_filename, &db)){
+    	debug_print("gen_ds_from_dbfile", "sqlite3_open error\n");
+        return -1;
+    }
+
+    if(SQLITE_OK != sqlite3_exec(db,sql_q1,NULL,NULL,&errmsg)){
+    	debug_print("gen_ds_from_dbfile", "process_database_info:sqlite3_exec() falied！\n");
+        return -1;
+    }
+
+    pg_num = getCount(db, dbfile_name); //get the number of db file pages
+    pg_info_ptr = (PDB_PAGE_INFO) malloc (sizeof(DB_PAGE_INFO) * pg_num);
+
+    return;
+}
 
 void gen_ds_file(const char* file_name, int data_block_num, int string_len){
 	int fd = -1;

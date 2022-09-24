@@ -44,4 +44,6 @@ int get_the_last_leaf_node_index(PQNODE pQHeader, PQNODE pQ);
 
 void print_mht_preorder(PMHTNode pmhtroot);
 
+void free_mht_postorder(PMHTNode *pmhtroot);
+
 #endif
